@@ -9,6 +9,7 @@ abstract class ServerMessage(override val kind: Int) : KindedMessage {
         const val Error = -1
         const val Ok = 0
         const val EOF = -2
+        const val AuthMoreData = 0x01;
 
         // these messages don't actually exist
         // but we use them to simplify the switch statements

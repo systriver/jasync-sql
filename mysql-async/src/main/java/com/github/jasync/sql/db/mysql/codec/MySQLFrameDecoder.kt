@@ -15,6 +15,7 @@ import com.github.jasync.sql.db.mysql.decoder.ParamAndColumnProcessingFinishedDe
 import com.github.jasync.sql.db.mysql.decoder.ParamProcessingFinishedDecoder
 import com.github.jasync.sql.db.mysql.decoder.PreparedStatementPrepareResponseDecoder
 import com.github.jasync.sql.db.mysql.decoder.ResultSetRowDecoder
+import com.github.jasync.sql.db.mysql.decoder.AuthMoreDataDecoder
 import com.github.jasync.sql.db.mysql.message.server.BinaryRowMessage
 import com.github.jasync.sql.db.mysql.message.server.ColumnProcessingFinishedMessage
 import com.github.jasync.sql.db.mysql.message.server.EOFMessage
@@ -43,6 +44,7 @@ class MySQLFrameDecoder(val charset: Charset, private val connectionId: String) 
     private val authenticationSwitchRequestDecoder = AuthenticationSwitchRequestDecoder(charset)
     private val rowDecoder = ResultSetRowDecoder()
     private val preparedStatementPrepareDecoder = PreparedStatementPrepareResponseDecoder()
+    private val authMoreDataDecoder = AuthMoreDataDecoder()
 
     var processingColumns = false
     private var processingParams = false
@@ -88,8 +90,8 @@ class MySQLFrameDecoder(val charset: Charset, private val connectionId: String) 
 
             logger.trace {
                 "[connectionId:$connectionId] - Reading message type $messageType - " +
-                        "(count=$messagesCount,hasDoneHandshake=$hasDoneHandshake,size=$size,isInQuery=$isInQuery,processingColumns=$processingColumns,processingParams=$processingParams,processedColumns=$processedColumns,processedParams=$processedParams)" +
-                        "\n${BufferDumper.dumpAsHex(slice)}}"
+                    "(count=$messagesCount,hasDoneHandshake=$hasDoneHandshake,size=$size,isInQuery=$isInQuery,processingColumns=$processingColumns,processingParams=$processingParams,processedColumns=$processedColumns,processedParams=$processedParams)" +
+                    "\n${BufferDumper.dumpAsHex(slice)}}"
             }
 
             slice.markReaderIndex()
@@ -161,6 +163,7 @@ class MySQLFrameDecoder(val charset: Charset, private val connectionId: String) 
                     }
                 }
             }
+            ServerMessage.AuthMoreData -> this.authMoreDataDecoder
             else -> {
                 if (this.isInQuery) {
                     null
@@ -214,8 +217,8 @@ class MySQLFrameDecoder(val charset: Charset, private val connectionId: String) 
             if (slice.readableBytes() != 0) {
                 throw BufferNotFullyConsumedException(
                     "Buffer was not fully consumed by decoder, ${slice.readableBytes()} bytes to read, " +
-                            "decoder is ${decoder.javaClass.simpleName} and message is ${result.javaClass.simpleName}"
-                            )
+                        "decoder is ${decoder.javaClass.simpleName} and message is ${result.javaClass.simpleName}"
+                )
             }
 
             when (result) {
