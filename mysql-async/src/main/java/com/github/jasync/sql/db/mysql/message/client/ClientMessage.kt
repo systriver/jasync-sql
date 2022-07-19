@@ -13,5 +13,6 @@ open class ClientMessage(override val kind: Int) : KindedMessage {
         const val PreparedStatementClose = 0x19 // COM_STMT_CLOSE
         const val SslRequest = 0xfd // SSLRequest
         const val AuthSwitchResponse = 0xfe // AuthSwitchRequest
+        const val PublicKeyRequest = 0x02
     }
 }

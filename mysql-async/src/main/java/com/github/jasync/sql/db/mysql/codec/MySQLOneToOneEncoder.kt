@@ -7,6 +7,7 @@ import com.github.jasync.sql.db.mysql.encoder.HandshakeResponseEncoder
 import com.github.jasync.sql.db.mysql.encoder.PreparedStatementCloseEncoder
 import com.github.jasync.sql.db.mysql.encoder.PreparedStatementExecuteEncoder
 import com.github.jasync.sql.db.mysql.encoder.PreparedStatementPrepareEncoder
+import com.github.jasync.sql.db.mysql.encoder.PublicKeyRequestEncoder
 import com.github.jasync.sql.db.mysql.encoder.QueryMessageEncoder
 import com.github.jasync.sql.db.mysql.encoder.QuitMessageEncoder
 import com.github.jasync.sql.db.mysql.encoder.SSLRequestEncoder
@@ -30,6 +31,7 @@ class MySQLOneToOneEncoder(charset: Charset, charsetMapper: CharsetMapper) :
     private val prepareEncoder = PreparedStatementPrepareEncoder(charset)
     private val executeEncoder = PreparedStatementExecuteEncoder(rowEncoder)
     private val authenticationSwitchEncoder = AuthenticationSwitchResponseEncoder(charset)
+    private val publicKeyRequestEncoder = PublicKeyRequestEncoder()
 
     private var sequence = 1
 
@@ -60,6 +62,10 @@ class MySQLOneToOneEncoder(charset: Charset, charsetMapper: CharsetMapper) :
             ClientMessage.AuthSwitchResponse -> {
                 sequence += 1
                 this.authenticationSwitchEncoder
+            }
+            ClientMessage.PublicKeyRequest -> {
+                sequence = 0
+                publicKeyRequestEncoder
             }
             else -> throw EncoderNotAvailableException(message)
         }
