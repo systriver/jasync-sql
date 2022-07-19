@@ -163,6 +163,7 @@ class MySQLFrameDecoder(val charset: Charset, private val connectionId: String) 
                     }
                 }
             }
+            // FIXME: After responding to AuthMoreData, we should retrieve public key (in case of no TLS), but I don't see it
             ServerMessage.AuthMoreData -> this.authMoreDataDecoder
             else -> {
                 if (this.isInQuery) {

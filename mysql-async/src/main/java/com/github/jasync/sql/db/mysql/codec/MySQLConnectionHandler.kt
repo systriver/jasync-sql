@@ -464,5 +464,7 @@ class MySQLConnectionHandler(
             requestPublicKey()
             return
         }
+
+        // TODO: In case of TLS, we can send the password in raw text
     }
 }
