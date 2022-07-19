@@ -10,6 +10,7 @@ import com.github.jasync.sql.db.mysql.message.client.CloseStatementMessage
 import com.github.jasync.sql.db.mysql.message.client.HandshakeResponseMessage
 import com.github.jasync.sql.db.mysql.message.client.PreparedStatementExecuteMessage
 import com.github.jasync.sql.db.mysql.message.client.PreparedStatementPrepareMessage
+import com.github.jasync.sql.db.mysql.message.client.publicKeyRequest
 import com.github.jasync.sql.db.mysql.message.client.QueryMessage
 import com.github.jasync.sql.db.mysql.message.client.QuitMessage
 import com.github.jasync.sql.db.mysql.message.client.SendLongDataMessage
@@ -23,6 +24,7 @@ import com.github.jasync.sql.db.mysql.message.server.OkMessage
 import com.github.jasync.sql.db.mysql.message.server.PreparedStatementPrepareResponse
 import com.github.jasync.sql.db.mysql.message.server.ResultSetRowMessage
 import com.github.jasync.sql.db.mysql.message.server.ServerMessage
+import com.github.jasync.sql.db.mysql.message.server.AuthMoreDataMessage
 import com.github.jasync.sql.db.mysql.util.CharsetMapper
 import com.github.jasync.sql.db.util.ExecutorServiceUtils
 import com.github.jasync.sql.db.util.FP
@@ -63,6 +65,8 @@ class MySQLConnectionHandler(
     private val executionContext: Executor = ExecutorServiceUtils.CommonPool,
     private val connectionId: String
 ) : SimpleChannelInboundHandler<Any>() {
+
+    var isTls: Boolean = false
 
     private val bootstrap = Bootstrap().group(this.group)
     private val connectionPromise = CompletableFuture<MySQLConnectionHandler>()
@@ -124,6 +128,9 @@ class MySQLConnectionHandler(
                     }
                     ServerMessage.EOF -> {
                         this.handleEOF(message)
+                    }
+                    ServerMessage.AuthMoreData -> {
+                        this.handleAuthMoreData(message as AuthMoreDataMessage)
                     }
                     ServerMessage.ColumnDefinition -> {
                         val m = message as ColumnDefinitionMessage
@@ -388,7 +395,7 @@ class MySQLConnectionHandler(
 
     private fun onPreparedStatementPrepareResponse(message: PreparedStatementPrepareResponse) {
         this.currentPreparedStatementHolder =
-                PreparedStatementHolder(this.currentPreparedStatement!!.statement, message)
+            PreparedStatementHolder(this.currentPreparedStatement!!.statement, message)
     }
 
     private fun onColumnDefinitionFinished() {
@@ -443,6 +450,19 @@ class MySQLConnectionHandler(
             is AuthenticationSwitchRequest -> {
                 handlerDelegate.switchAuthentication(m)
             }
+        }
+    }
+
+    private fun requestPublicKey(): ChannelFuture = writeAndHandleError(publicKeyRequest)
+
+    private fun handleAuthMoreData(m: AuthMoreDataMessage) {
+        if (m.isAuthDone) {
+            return
+        }
+
+        if (!isTls) {
+            requestPublicKey()
+            return
         }
     }
 }

@@ -324,6 +324,7 @@ class MySQLConnection @JvmOverloads constructor(
             channel.pipeline().addFirst(handler)
             handler.handshakeFuture().addListener { handshakeFuture ->
                 if (handshakeFuture.isSuccess) {
+                    connectionHandler.isTls = true
                     connectionHandler.write(handshakeResponse)
                 } else {
                     logger.error(handshakeFuture.cause()) { "SSL Handshake failed" }
